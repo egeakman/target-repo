@@ -1,0 +1,42 @@
+name: Dispatcher Workflow
+
+on:
+  workflow_run:
+    workflows: ["Trigger Archiver"]
+    types:
+      - completed
+
+jobs:
+  dispatcher:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Define Branch-to-Workflow Mapping
+        id: mapping
+        run: |
+          echo "::set-output name=workflows::$(cat <<EOF
+          {
+            "2022": "2022.yaml",
+            "2023": "2023.yaml",
+            "2024": "2024.yaml",
+            "2025": "2025.yaml",
+          }
+          EOF
+          )"
+
+      - name: Determine Workflow to Run
+        id: determine
+        run: |
+          branch=${{ github.event.workflow_run.head_branch }}
+          workflows='${{ steps.mapping.outputs.workflows }}'
+          workflow=$(echo "$workflows" | jq -r --arg branch "$branch" '.[$branch] // empty')
+          if [ -z "$workflow" ]; then
+            echo "No workflow mapped for branch: $branch"
+            exit 1
+          fi
+          echo "::set-output name=workflow::$workflow"
+
+      - name: Trigger Workflow
+        run: |
+          workflow=${{ steps.determine.outputs.workflow }}
+          echo "Triggering workflow: $workflow"
+          gh workflow run "$workflow"
