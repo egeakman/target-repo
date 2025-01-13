@@ -1,7 +1,6 @@
 name: Automated Commit
 
-on:
-  workflow_dispatch:
+on: [workflow_dispatch]
 
 jobs:
   push_commit:
@@ -9,7 +8,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Configure Git
       run: |
